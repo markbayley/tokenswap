@@ -2,7 +2,8 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
-    "hardhat": "^2.12.0"
+    "hardhat": "^2.12.0",
+    "dotenv": "^16.0.0"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.7.2"
@@ -14,7 +15,14 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "compile": "hardhat compile",
+    "deploy:sepolia": "hardhat run scripts/deploy-sepolia.js --network sepolia",
+    "deploy:lite-sepolia": "hardhat run scripts/deploy-lite-sepolia.js --network sepolia",
+    "test:contract": "hardhat run scripts/test-contract.js",
+    "test:local": "hardhat run scripts/test-contract.js --network hardhat",
+    "test:deployed": "hardhat run scripts/test-deployed-contract.js --network sepolia",
+    "estimate:gas": "hardhat run scripts/estimate-gas.js"
   },
   "author": "",
   "license": "ISC"
