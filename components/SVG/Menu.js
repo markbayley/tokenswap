@@ -7,7 +7,7 @@ const Menu = () => {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      className="w-6 h-6 dark:text-gray-100"
+      className="w-8 h-8 dark:text-gray-100"
     >
       <path
         strokeLinecap="round"

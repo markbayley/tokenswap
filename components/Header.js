@@ -3,10 +3,14 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { toast, Toaster } from "react-hot-toast";
 
-import { Menu, Logo, TokenBalance, TransactionStatus } from "./index";
+import { Menu, Logo, LogoSmall, TokenBalance, TransactionStatus } from "./index";
+
+// Check if we're on the client side
+const isClient = typeof window !== "undefined";
 
 const Header = () => {
   const [tokenBalComp, setTokenBalComp] = useState();
+  const [isMounted, setIsMounted] = useState(false);
 
   const { address } = useAccount();
 
@@ -18,7 +22,14 @@ const Header = () => {
     });
   };
 
+  // Handle client-side mounting
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || !isClient) return;
+
     setTokenBalComp(
       <>
         <TokenBalance name="ETH" walletAddress={address} />
@@ -28,13 +39,13 @@ const Header = () => {
     );
 
     if (!address) {
-      notifyConnectWallet();
+     // notifyConnectWallet();
     }
-  }, [address]);
+  }, [address, isMounted]);
 
   return (
-    <header className="p-4 text-gray-100">
-      <div className="container mx-auto flex items-center justify-between h-16 ">
+    <header className="p-4 text-zinc-100 text-lg">
+      <div className="container mx-auto flex items-center justify-between h-10 ">
         {/* <Menu /> */}
         {/* {tokenBalComp} */}
 
@@ -43,61 +54,75 @@ const Header = () => {
           href="#"
           aria-label="Home"
           //target="_blank"
-          className="flex items-center p-2"
+          className="flex items-center p-2 mt-1"
         >
-          <Logo />
+          {/* Large logo for md and up, max width 150px */}
+          <span className="hidden md:block">
+            <span className="max-w-[150px] block">
+              <Logo width="150" height="30" />
+            </span>
+          </span>
+          {/* Small logo for below md */}
+          <span className="block md:hidden">
+            <LogoSmall />
+          </span>
         </a>
-        <ul className="items-stretch hidden space-x-3 lg:flex">
+        <ul className="items-stretch hidden space-x-3 xl:flex">
           <li>
             <a
               rel="noopener noreferrer"
               href="/"
-              className="flex items-center px-4 -mb-1 text-gray-100"
+              className="flex items-center px-4 -mb-1 text-gray-100 hover:text-[#7765F3]"
             >
-             Swap
+              Swap
             </a>
           </li>
           <li>
             <a
               rel="noopener noreferrer"
               href="/"
-              className="flex items-center px-4 -mb-1 dark:border-transparent text-[#7765F3] hover:text-[#7765F3] dark:hover:text-[#7765F3] border-b-2 border-transparent hover:border-[#7765F3] dark:hover:border-[#7765F3]"
+              className="flex items-center px-4 -mb-1 text-gray-100 hover:text-[#7765F3]"
             >
-             Tokens
+              Tokens
             </a>
           </li>
           <li>
             <a
               rel="noopener noreferrer"
               href="/"
-              className="flex items-center px-4 -mb-1 dark:border-transparent text-[#7765F3] hover:text-[#7765F3] dark:hover:text-[#7765F3] border-b-2 border-transparent hover:border-[#7765F3] dark:hover:border-[#7765F3]"
+              className="flex items-center px-4 -mb-1 text-gray-100 hover:text-[#7765F3]"
             >
-             NFTS
+              NFTS
             </a>
           </li>
-          <li>
+          {/* <li>
             <a
               rel="noopener noreferrer"
               href="/"
-              className="flex items-center px-4 -mb-1 dark:border-transparent text-[#7765F3] hover:text-[#7765F3] dark:hover:text-[#7765F3] border-b-2 border-transparent hover:border-[#7765F3] dark:hover:border-[#7765F3]"
+              className="flex items-center px-4 -mb-1 text-gray-100 hover:text-[#7765F3]"
             >
-             Pool
+              Pool
             </a>
-          </li>
+          </li> */}
         </ul>
-     
 
-      <div className="items-center flex-shrink-0 hidden lg:flex">
-        <TokenBalance name="ETH" walletAddress={address} />
-        <TokenBalance name="USDT" walletAddress={address} />
-        <TokenBalance name="USDC" walletAddress={address} />
-        <ConnectButton />
-      </div>
+        <div className="flex items-center lg:space-x-2">
+          {isMounted && (
+            <>
+              <TokenBalance name="ETH" walletAddress={address} />
+              <TokenBalance name="USDT" walletAddress={address} />
+              <TokenBalance name="USDC" walletAddress={address} />
+            </>
+          )}
+          <ConnectButton />
+        </div>
 
-      <button className="lg:hidden flex items-center p-2">
+        <button className="lg:hidden flex items-center p-2">
         <Menu />
       </button>
       </div>
+
+    
       <Toaster />
     </header>
   );

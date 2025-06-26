@@ -43,11 +43,38 @@ export async function hasValidBalance(owner, tokenName, amount, contractAddress 
     }
 }
 
+export async function increaseAllowance(tokenName, amount) {
+    try {
+        const tokenKey = toTokenKey(tokenName);
+        const contractObj = await contract();
+        const tokenAddress = await contractObj.tokenInstances(tokenKey);
+        const tokenContractObj = await EthereumDexLiteContract(tokenAddress);
+        
+        // Approve the contract to spend the specified amount
+        const txResponse = await tokenContractObj.approve(contractObj.address, toWei(amount, 18));
+        return await txResponse.wait();
+    } catch (error) {
+        return parseErrorMsg(error);
+    }
+}
+
 export async function swapTokenToEth(tokenName, amount) {
     try {
         const tokenKey = toTokenKey(tokenName);
         const contractObj = await contract();
         const txResponse = await contractObj.swapTokenToEth(tokenKey, toWei(amount, 18));
+        return await txResponse.wait();
+    } catch (error) {
+        return parseErrorMsg(error);
+    }
+}
+
+export async function swapTokenToToken(srcTokenName, destTokenName, amount) {
+    try {
+        const srcTokenKey = toTokenKey(srcTokenName);
+        const destTokenKey = toTokenKey(destTokenName);
+        const contractObj = await contract();
+        const txResponse = await contractObj.swapTokenToToken(srcTokenKey, destTokenKey, toWei(amount, 18));
         return await txResponse.wait();
     } catch (error) {
         return parseErrorMsg(error);
