@@ -10,12 +10,35 @@ import Table from "./Table";
 import TokenBalance from "./TokenBalance";
 import TransactionStatus from "./TransactionStatus";
 import LoadingSpinner from "./LoadingSpinner";
+import PriceUpdater from "./PriceUpdater";
+import Wallet from "./Wallet";
 
-import Menu from "./SVG/Menu"
-import Logo from "./SVG/Logo"
-import LogoSmall from "./SVG/LogoSmall"
-import Facebook from "./SVG/Facebook"
-import Insta from "./SVG/Insta"
-import Twitter from "./SVG/Twitter"
+import Menu from "./SVG/Menu";
+import Logo from "./SVG/Logo";
+import LogoSmall from "./SVG/LogoSmall";
+import Facebook from "./SVG/Facebook";
+import Insta from "./SVG/Insta";
+import Twitter from "./SVG/Twitter";
 
-export { Menu, Logo, LogoSmall, Facebook, Insta, Twitter, Header, Footer, HeroSection, Card, Selector, SingleCard, SwapComponent, SwapField, Table, TokenBalance, TransactionStatus, LoadingSpinner };
+export {
+  Wallet,
+  Menu,
+  Logo,
+  LogoSmall,
+  Facebook,
+  Insta,
+  Twitter,
+  Header,
+  Footer,
+  HeroSection,
+  Card,
+  Selector,
+  SingleCard,
+  SwapComponent,
+  SwapField,
+  Table,
+  TokenBalance,
+  TransactionStatus,
+  LoadingSpinner,
+  PriceUpdater,
+};

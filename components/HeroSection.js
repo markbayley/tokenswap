@@ -1,8 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 
-import { SwapComponent } from "./index";
+import { SwapComponent, Wallet } from "./index";
 
 const HeroSection = () => {
+  
+
+  const [showWallet, setShowWallet] = useState(false);
+
   return (
     <section className="bg-[#1A1A1A] text-gray-100">
       <div className="container flex flex-col justify-center p-6 mx-auto sm:py-12 lg:py-24 lg:flex-row lg:justify-evenly">
@@ -18,14 +22,15 @@ const HeroSection = () => {
             {" "} ERC20 tokens, NFTs, and more.
           </p>
           <div className="flex flex-col space-y-4 sm:items-center sm:justify-center sm:flex-row sm:space-y-0 sm:space-x-4 lg:justify-start">
-            <a
+            {/* <a
               rel="noopener noreferrer"
               href="#"
                 className="px-6 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
             >
               Get Started
-            </a>
+            </a> */}
             <a
+            onClick={() => setShowWallet(false)}
               rel="noopener noreferrer"
               href="#"
                 className="px-6 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
@@ -33,18 +38,19 @@ const HeroSection = () => {
               Swap Tokens
             </a>
             <a
+            onClick={() => setShowWallet(true)}
               rel="noopener noreferrer"
               href="#"
-               className="px-6 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
+               className="px-8 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
             >
-              Learn More
+              My Wallet
             </a>
          
           </div>
         </div>
 
         <div className="flex items-center justify-center p-6 mt-8 rounded-sm lg:w-1/2 lg:mt-0">
-          <SwapComponent />
+          {showWallet ? <Wallet /> : <SwapComponent />}
         </div>
       </div>
     </section>

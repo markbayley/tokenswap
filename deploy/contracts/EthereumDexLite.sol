@@ -124,6 +124,22 @@ contract EthereumDexLite is ReentrancyGuard, Ownable {
     }
     
     /**
+     * @dev Update token price (only owner)
+     */
+    function updateTokenPrice(bytes32 tokenName, uint256 newPrice) external onlyOwner {
+        require(address(tokenInstances[tokenName]) != address(0), "Token not supported");
+        require(newPrice > 0, "Price must be greater than 0");
+        tokenPrices[tokenName] = newPrice;
+    }
+    
+    /**
+     * @dev Get current token price
+     */
+    function getTokenPrice(bytes32 tokenName) external view tokenExists(tokenName) returns (uint256) {
+        return tokenPrices[tokenName];
+    }
+    
+    /**
      * @dev Withdraw collected fees
      */
     function withdrawFees() external onlyOwner {

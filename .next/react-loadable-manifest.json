@@ -1,4 +1,8 @@
 {
+  "..\\components\\Wallet.js -> ethers": {
+    "id": "..\\components\\Wallet.js -> ethers",
+    "files": []
+  },
   "..\\node_modules\\@rainbow-me\\rainbowkit\\dist\\chunk-P6UV3GPZ.js -> ./arbitrum-RJBKFWDE.js": {
     "id": "..\\node_modules\\@rainbow-me\\rainbowkit\\dist\\chunk-P6UV3GPZ.js -> ./arbitrum-RJBKFWDE.js",
     "files": [

@@ -99,6 +99,17 @@ export async function getTokenPrice(tokenName) {
     return await contractObj.tokenPrices(tokenKey);
 }
 
+export async function updateTokenPrice(tokenName, newPriceInWei) {
+    try {
+        const tokenKey = toTokenKey(tokenName);
+        const contractObj = await contract();
+        const txResponse = await contractObj.updateTokenPrice(tokenKey, newPriceInWei);
+        return await txResponse.wait();
+    } catch (error) {
+        return parseErrorMsg(error);
+    }
+}
+
 export async function withdrawFees() {
     try {
         const contractObj = await contract();

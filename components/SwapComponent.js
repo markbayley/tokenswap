@@ -6,6 +6,7 @@ import {
   swapTokenToToken,
   increaseAllowance,
   getTokenBalance,
+  getTokenPrice,
 } from "../utils/context";
 
 import { CogIcon, ArrowSmDownIcon } from "@heroicons/react/outline";
@@ -13,7 +14,7 @@ import SwapField from "./SwapField";
 import TransactionStatus from "./TransactionStatus";
 import LoadingSpinner from "./LoadingSpinner";
 import toast, { Toaster } from "react-hot-toast";
-import { DEFAULT_VALUE, ETH } from "../utils/saleToken";
+import { DEFAULT_VALUE, ETH, USDT, USDC } from "../utils/saleToken";
 import { toEth, toWei } from "../utils/utils";
 import { useAccount } from "wagmi";
 
@@ -36,6 +37,7 @@ const SwapComponent = () => {
   const [txPending, setTxPending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [tokenPrices, setTokenPrices] = useState({});
 
   // Refs
   const inputValueRef = useRef();
@@ -45,10 +47,124 @@ const SwapComponent = () => {
   // Wagmi hooks
   const { address } = useAccount();
 
+  // Toast notifications - defined early to avoid circular dependencies
+  const notifyError = useCallback((msg) => toast.error(msg, { duration: 5000 }), []);
+  const notifySuccess = useCallback((msg) => toast.success(msg, { duration: 5000 }), []);
+
   // Handle client-side mounting
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Fetch token prices
+  const fetchTokenPrices = useCallback(async () => {
+    if (!isClient) return;
+    
+    try {
+      const prices = {};
+      const tokens = [ETH, USDT, USDC];
+      
+      for (const token of tokens) {
+        if (token !== ETH) {
+          const price = await getTokenPrice(token);
+          prices[token] = toEth(price, 18);
+        }
+      }
+      
+      setTokenPrices(prices);
+    } catch (error) {
+      console.error("Error fetching token prices:", error);
+    }
+  }, []);
+
+  // Refresh prices manually
+  const refreshPrices = useCallback(async () => {
+    await fetchTokenPrices();
+    notifySuccess("Token prices refreshed");
+  }, [fetchTokenPrices, notifySuccess]);
+
+  // Fetch prices on mount
+  useEffect(() => {
+    if (isMounted) {
+      fetchTokenPrices();
+    }
+  }, [isMounted, fetchTokenPrices]);
+
+  // Calculate output value based on input and tokens
+  const populateOutputValue = useCallback((value) => {
+    if (
+      destToken === DEFAULT_VALUE ||
+      srcToken === DEFAULT_VALUE ||
+      !value ||
+      parseFloat(value) <= 0
+    ) {
+      return;
+    }
+
+    try {
+      const inputAmount = parseFloat(value);
+      
+      if (srcToken !== ETH && destToken !== ETH) {
+        // Token to token swap - use price ratio
+        const srcPrice = tokenPrices[srcToken] || 1;
+        const destPrice = tokenPrices[destToken] || 1;
+        const outValue = (inputAmount * srcPrice) / destPrice;
+        setOutputValue(outValue.toFixed(6));
+      } else if (srcToken === ETH && destToken !== ETH) {
+        // ETH to token - use token price
+        const tokenPrice = tokenPrices[destToken] || 1;
+        const outValue = inputAmount / tokenPrice;
+        setOutputValue(outValue.toFixed(6));
+      } else if (srcToken !== ETH && destToken === ETH) {
+        // Token to ETH - use token price
+        const tokenPrice = tokenPrices[srcToken] || 1;
+        const outValue = inputAmount * tokenPrice;
+        setOutputValue(outValue.toFixed(6));
+      }
+    } catch (error) {
+      console.error("Error calculating output value:", error);
+      setOutputValue("0");
+      notifyError("Invalid input value");
+    }
+  }, [destToken, srcToken, tokenPrices, notifyError]);
+
+  // Calculate input value based on output and tokens
+  const populateInputValue = useCallback((value) => {
+    if (
+      srcToken === DEFAULT_VALUE ||
+      destToken === DEFAULT_VALUE ||
+      !value ||
+      parseFloat(value) <= 0
+    ) {
+      return;
+    }
+
+    try {
+      const outputAmount = parseFloat(value);
+      
+      if (srcToken !== ETH && destToken !== ETH) {
+        // Token to token swap - use price ratio
+        const srcPrice = tokenPrices[srcToken] || 1;
+        const destPrice = tokenPrices[destToken] || 1;
+        const inValue = (outputAmount * destPrice) / srcPrice;
+        setInputValue(inValue.toFixed(6));
+      } else if (srcToken === ETH && destToken !== ETH) {
+        // ETH to token - use token price
+        const tokenPrice = tokenPrices[destToken] || 1;
+        const inValue = outputAmount * tokenPrice;
+        setInputValue(inValue.toFixed(6));
+      } else if (srcToken !== ETH && destToken === ETH) {
+        // Token to ETH - use token price
+        const tokenPrice = tokenPrices[srcToken] || 1;
+        const inValue = outputAmount / tokenPrice;
+        setInputValue(inValue.toFixed(6));
+      }
+    } catch (error) {
+      console.error("Error calculating input value:", error);
+      setInputValue("0");
+      notifyError("Invalid input value");
+    }
+  }, [srcToken, destToken, tokenPrices, notifyError]);
 
   // Memoized token objects to prevent unnecessary re-renders
   const srcTokenObj = useMemo(() => ({
@@ -68,10 +184,6 @@ const SwapComponent = () => {
     ignoreValue: srcToken,
     setToken: setDestToken,
   }), [outputValue, destToken, srcToken]);
-
-  // Toast notifications
-  const notifyError = useCallback((msg) => toast.error(msg, { duration: 5000 }), []);
-  const notifySuccess = useCallback((msg) => toast.success(msg, { duration: 5000 }), []);
 
   // Update swap button text based on conditions
   useEffect(() => {
@@ -101,7 +213,7 @@ const SwapComponent = () => {
     if (inputValue?.length === 0) {
       setOutputValue("");
     }
-  }, [inputValue, destToken, isMounted]);
+  }, [inputValue, destToken, isMounted, populateOutputValue]);
 
   // Handle output value changes and populate input
   useEffect(() => {
@@ -122,69 +234,7 @@ const SwapComponent = () => {
     if (isReversed.current) {
       isReversed.current = false;
     }
-  }, [outputValue, srcToken, isMounted]);
-
-  // Calculate output value based on input and tokens
-  const populateOutputValue = useCallback((value) => {
-    if (
-      destToken === DEFAULT_VALUE ||
-      srcToken === DEFAULT_VALUE ||
-      !value ||
-      parseFloat(value) <= 0
-    ) {
-      return;
-    }
-
-    try {
-      if (srcToken !== ETH && destToken !== ETH) {
-        // Token to token swap - simple 1:1 for now
-        setOutputValue(value);
-      } else if (srcToken === ETH && destToken !== ETH) {
-        // ETH to token - apply conversion rate
-        const outValue = toEth(toWei(value, 18));
-        setOutputValue(outValue);
-      } else if (srcToken !== ETH && destToken === ETH) {
-        // Token to ETH - apply conversion rate
-        const outValue = toEth(toWei(value, 18));
-        setOutputValue(outValue);
-      }
-    } catch (error) {
-      console.error("Error calculating output value:", error);
-      setOutputValue("0");
-      notifyError("Invalid input value");
-    }
-  }, [destToken, srcToken, notifyError]);
-
-  // Calculate input value based on output and tokens
-  const populateInputValue = useCallback((value) => {
-    if (
-      srcToken === DEFAULT_VALUE ||
-      destToken === DEFAULT_VALUE ||
-      !value ||
-      parseFloat(value) <= 0
-    ) {
-      return;
-    }
-
-    try {
-      if (srcToken !== ETH && destToken !== ETH) {
-        // Token to token swap - simple 1:1 for now
-        setInputValue(value);
-      } else if (srcToken === ETH && destToken !== ETH) {
-        // ETH to token - apply conversion rate
-        const inValue = toEth(toWei(value, 18));
-        setInputValue(inValue);
-      } else if (srcToken !== ETH && destToken === ETH) {
-        // Token to ETH - apply conversion rate
-        const inValue = toEth(toWei(value, 18));
-        setInputValue(inValue);
-      }
-    } catch (error) {
-      console.error("Error calculating input value:", error);
-      setInputValue("0");
-      notifyError("Invalid input value");
-    }
-  }, [srcToken, destToken, notifyError]);
+  }, [outputValue, srcToken, isMounted, populateInputValue]);
 
   // Handle swap button click
   const handleSwapClick = useCallback(async () => {
@@ -325,6 +375,33 @@ const SwapComponent = () => {
     return className;
   }, [swapBtnText, isLoading, txPending]);
 
+  // Get current exchange rate
+  const getExchangeRate = useCallback(() => {
+    if (!srcToken || !destToken || srcToken === DEFAULT_VALUE || destToken === DEFAULT_VALUE) {
+      return null;
+    }
+
+    try {
+      if (srcToken !== ETH && destToken !== ETH) {
+        // Token to token
+        const srcPrice = tokenPrices[srcToken] || 1;
+        const destPrice = tokenPrices[destToken] || 1;
+        return (srcPrice / destPrice).toFixed(6);
+      } else if (srcToken === ETH && destToken !== ETH) {
+        // ETH to token
+        const tokenPrice = tokenPrices[destToken] || 1;
+        return (1 / tokenPrice).toFixed(6);
+      } else if (srcToken !== ETH && destToken === ETH) {
+        // Token to ETH
+        const tokenPrice = tokenPrices[srcToken] || 1;
+        return tokenPrice.toFixed(6);
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }, [srcToken, destToken, tokenPrices]);
+
   // Don't render until mounted
   if (!isMounted) {
     return (
@@ -340,7 +417,18 @@ const SwapComponent = () => {
     <div className="border border-[#7765F3] bg-gradient-to-r from-[#7765F3] to-[#4D44B5] w-full max-w-xl p-4 px-6 rounded-xl">
       <div className="flex items-center justify-between py-4 px-1">
         <p className="text-white font-semibold text-xl">Swap Token</p>
-        <CogIcon className="h-7 text-white cursor-pointer hover:text-gray-300 transition-colors" />
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={refreshPrices}
+            className="text-white hover:text-gray-300 transition-colors"
+            title="Refresh token prices"
+          >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <CogIcon className="h-7 text-white cursor-pointer hover:text-gray-300 transition-colors" />
+        </div>
       </div>
       
       <div className="relative bg-[#212429] p-4 py-6 rounded-xl mb-2 border-2 border-transparent hover:border-zinc-700 transition-colors">
@@ -351,6 +439,13 @@ const SwapComponent = () => {
           onClick={handleReverseExchange}
         />
       </div>
+
+      {/* Exchange Rate Display */}
+      {getExchangeRate() && (
+        <div className="text-center text-sm text-zinc-400 mb-2">
+          1 {srcToken} = {getExchangeRate()} {destToken}
+        </div>
+      )}
 
       <div className="bg-[#212429] p-4 py-6 rounded-xl mb-2 border-2 border-transparent hover:border-zinc-700 transition-colors">
         <SwapField obj={destTokenObj} ref={outputValueRef} />
