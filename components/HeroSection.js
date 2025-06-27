@@ -9,15 +9,15 @@ const HeroSection = () => {
 
   return (
     <section className="bg-[#1A1A1A] text-gray-100">
-      <div className="container flex flex-col justify-center p-6 mx-auto sm:py-12 lg:py-24 lg:flex-row lg:justify-evenly">
-        <div className="flex flex-col justify-center p-6 text-center rounded-sm lg:max-w-md xl:max-w-lg lg:text-left">
+      <div className="container flex flex-col justify-center p-2 mx-auto sm:py-12  lg:flex-row lg:justify-evenly">
+        <div className="flex flex-col justify-center p-2 text-center rounded-sm lg:max-w-md xl:max-w-lg lg:text-left">
           <h1 className="text-5xl text-zinc-200 font-bold sm:text-6xl">
             Token
             <span className="text-[#7765F3]">Swap</span>
           </h1>
           <p className="mt-6 mb-8 text-lg text-zinc-400 sm:mb-12">
-            Swap, earn, and build on the leading decentralized exchange
-            platform.
+            Swap, earn, and build on the leading decentralized
+             exchange platform.
             <br className="hidden md:inline lg:hidden" />
             {" "} ERC20 tokens, NFTs, and more.
           </p>
@@ -49,7 +49,7 @@ const HeroSection = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-center p-6 mt-8 rounded-sm lg:w-1/2 lg:mt-0">
+        <div className="flex items-center justify-center p-2 mt-8 rounded-sm lg:w-1/2 lg:mt-0">
           {showWallet ? <Wallet /> : <SwapComponent />}
         </div>
       </div>

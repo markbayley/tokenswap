@@ -83,7 +83,7 @@ const Header = () => {
               href="/"
               className="flex items-center px-4 -mb-1 text-gray-100 hover:text-[#7765F3]"
             >
-              Tokens
+              Wallet
             </a>
           </li>
           <li>
@@ -92,7 +92,7 @@ const Header = () => {
               href="/"
               className="flex items-center px-4 -mb-1 text-gray-100 hover:text-[#7765F3]"
             >
-              NFTS
+              About
             </a>
           </li>
           {/* <li>
@@ -107,13 +107,7 @@ const Header = () => {
         </ul>
 
         <div className="flex items-center lg:space-x-2">
-          {isMounted && (
-            <>
-              <TokenBalance name="ETH" walletAddress={address} />
-              <TokenBalance name="USDT" walletAddress={address} />
-              <TokenBalance name="USDC" walletAddress={address} />
-            </>
-          )}
+     
           <ConnectButton />
         </div>
 
@@ -121,9 +115,23 @@ const Header = () => {
         <Menu />
       </button>
       </div>
-
-    
+  
       <Toaster />
+
+
+      {/* <div className="container mx-auto flex items-center justify-end h-10 space-x-3">
+      {isMounted && (
+            <>
+              <TokenBalance name="ETH" walletAddress={address} />
+              <TokenBalance name="USDT" walletAddress={address} />
+              <TokenBalance name="USDC" walletAddress={address} />
+            </>
+          )}
+    </div> */}
+
+
+
+
     </header>
   );
 };

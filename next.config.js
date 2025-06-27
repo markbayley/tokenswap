@@ -5,7 +5,7 @@ const nextConfig = {
   // Disable SSR for pages that use Web3
   experimental: {
     // This helps with hydration issues
-    esmExternals: 'loose',
+    esmExternals: true,
   },
   // Handle Web3 libraries that don't support SSR
   webpack: (config, { isServer }) => {
