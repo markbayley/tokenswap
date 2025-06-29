@@ -12,6 +12,7 @@ import TransactionStatus from "./TransactionStatus";
 import LoadingSpinner from "./LoadingSpinner";
 import PriceUpdater from "./PriceUpdater";
 import Wallet from "./Wallet";
+import PortfolioChart from "./PortfolioChart";
 
 import Menu from "./SVG/Menu";
 import Logo from "./SVG/Logo";
@@ -19,15 +20,18 @@ import LogoSmall from "./SVG/LogoSmall";
 import Facebook from "./SVG/Facebook";
 import Insta from "./SVG/Insta";
 import Twitter from "./SVG/Twitter";
+import MetaMask from "./SVG/MetaMask";
 
 export {
   Wallet,
+  PortfolioChart,
   Menu,
   Logo,
   LogoSmall,
   Facebook,
   Insta,
   Twitter,
+  MetaMask,
   Header,
   Footer,
   HeroSection,

@@ -26,14 +26,6 @@ const TokenBalance = ({ name, walletAddress }) => {
   const [txPending, setTxPending] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  const notifyError = (message) => {
-    toast.error(message, {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: false,
-    });
-  };
-
   const notifySuccess = (message) => {
     toast.success(message, {
       position: "top-right",
@@ -54,7 +46,7 @@ const TokenBalance = ({ name, walletAddress }) => {
       // Check if token is supported by the contract
       const isTokenSupported = name === ETH || SUPPORTED_TOKENS.includes(name);
       setIsSupported(isTokenSupported);
-      
+
       if (isTokenSupported) {
         fetchTokenBalance();
         fetchTokenAddress();
@@ -103,7 +95,7 @@ const TokenBalance = ({ name, walletAddress }) => {
         setTokenAddress("");
         return;
       }
-      
+
       const address = await getTokenAddress(name);
       setTokenAddress(address);
     } catch (error) {
@@ -120,7 +112,7 @@ const TokenBalance = ({ name, walletAddress }) => {
       navigator.clipboard.writeText(tokenAddress);
       setCopyIcon(ClipboardCheckIcon);
       notifySuccess("Token address copied to clipboard");
-      
+
       // Reset icon after 2 seconds
       setTimeout(() => {
         setCopyIcon(ClipboardCopyIcon);
@@ -150,14 +142,12 @@ const TokenBalance = ({ name, walletAddress }) => {
           />
         </div>
       )}
-      
+
       {txPending && (
         <div className="flex items-center p-2 px-3 bg-[#7765F3] rounded-r-md">
           <TransactionStatus />
         </div>
       )}
-
-      <Toaster />
     </div>
   );
 };

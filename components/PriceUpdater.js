@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { updateTokenPrice, getTokenPrice } from "../utils/context";
-import { toWei } from "../utils/utils";
 import { ETH, USDT, USDC } from "../utils/saleToken";
 import toast, { Toaster } from "react-hot-toast";
 

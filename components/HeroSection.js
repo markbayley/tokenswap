@@ -3,8 +3,6 @@ import React, { useState } from "react";
 import { SwapComponent, Wallet } from "./index";
 
 const HeroSection = () => {
-  
-
   const [showWallet, setShowWallet] = useState(false);
 
   return (
@@ -16,36 +14,28 @@ const HeroSection = () => {
             <span className="text-[#7765F3]">Swap</span>
           </h1>
           <p className="mt-6 mb-8 text-lg text-zinc-400 sm:mb-12">
-            Swap, earn, and build on the leading decentralized
-             exchange platform.
-            <br className="hidden md:inline lg:hidden" />
-            {" "} ERC20 tokens, NFTs, and more.
+            Swap, earn, and build on the leading decentralized exchange
+            platform.
+            <br className="hidden md:inline lg:hidden" /> ERC20 tokens, NFTs,
+            and more.
           </p>
           <div className="flex flex-col space-y-4 sm:items-center sm:justify-center sm:flex-row sm:space-y-0 sm:space-x-4 lg:justify-start">
-            {/* <a
-              rel="noopener noreferrer"
-              href="#"
-                className="px-6 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
-            >
-              Get Started
-            </a> */}
             <a
-            onClick={() => setShowWallet(false)}
+              onClick={() => setShowWallet(false)}
               rel="noopener noreferrer"
               href="#"
-                className="px-6 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
+              className="px-6 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
             >
               Swap Tokens
             </a>
             <a
-            onClick={() => setShowWallet(true)}
+              onClick={() => setShowWallet(true)}
               rel="noopener noreferrer"
               href="#"
-               className="px-8 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
+              className="px-8 py-3 font-semibold rounded-md bg-[#4D44B5] text-white hover:bg-[#7765F3]"
             >
               My Wallet
             </a>
-         
           </div>
         </div>
 

@@ -30,7 +30,7 @@ const Selector = ({ defaultValue, ignoreValue, setToken, id }) => {
       <Dropdown.Button
         css={{
           backgroundColor:
-            selectedItem === DEFAULT_VALUE ? "#77765F3" : "#2C2F36",
+            selectedItem === DEFAULT_VALUE ? "#7765F3" : "#2C2F36",
         }}
       >
         {selectedItem}
