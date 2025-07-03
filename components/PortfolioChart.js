@@ -63,19 +63,19 @@ const PortfolioChart = () => {
 
       // Create chart data for Chart.js
       const chartDataConfig = {
-        labels: ["Ethereum (ETH)", "Tether USD (USDT)", "USD Coin (USDC)"],
+        labels: ["ETH", "USDT", "USDC"],
         datasets: [
           {
             data: [ethValue, usdtValue, usdcValue],
             backgroundColor: [
-              "#3B82F6", // Blue for ETH
-              "#10B981", // Green for USDT
-              "#2563EB", // Blue-600 for USDC
+              "#343434", // Ethereum (matches SVG)
+              "#50af95", // Tether (matches SVG)
+              "#2775ca", // USDC (matches SVG)
             ],
             borderColor: [
-              "#1E40AF", // Darker blue
-              "#059669", // Darker green
-              "#1D4ED8", // Darker blue-600
+              "#343434", // Ethereum
+              "#50af95", // Tether
+              "#2775ca", // USDC
             ],
             borderWidth: 2,
             hoverBorderWidth: 3,
@@ -109,7 +109,7 @@ const PortfolioChart = () => {
         labels: {
           color: "#D1D5DB", // Light gray text
           font: {
-            size: 12,
+            size: 10,
           },
           padding: 20,
           usePointStyle: true,
@@ -205,7 +205,7 @@ const PortfolioChart = () => {
               <div className="relative w-80 h-80">
                 <Doughnut data={chartData} options={chartOptions} />
                 {/* Total value text positioned in center of donut */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[100%] pointer-events-none text-center">
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[120%] pointer-events-none text-center">
                   <p className="text-zinc-400 text-sm mb-1">Total Value</p>
                   <p className="text-white text-2xl font-bold">${totalValue.toFixed(2)}</p>
                 </div>

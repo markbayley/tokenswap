@@ -45,6 +45,7 @@ const Selector = ({ defaultValue, ignoreValue, setToken, id }) => {
       >
         {(item) => (
           <Dropdown.Item 
+          className="text-white"
             aria-label={id} 
             key={item.key}
             color={item.key === "delete" ? "error" : "default"}>

@@ -13,13 +13,10 @@ export default function TransactionStatus({}) {
     <Transition.Root show={open} as={Fragment}>
       <Dialog
         as="div"
-        className="fixed z-10 inset-0 overflow-y-auto"
+        className="fixed z-[9999] inset-0 overflow-y-auto"
         onClose={handleClose}
       >
-        <div
-          className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20
-         text-center sm:block sm:p-0"
-        >
+        <div className="flex items-center justify-center min-h-screen px-4 py-6">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -29,49 +26,42 @@ export default function TransactionStatus({}) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-gray bg-gray-500 bg-opacity-75 transition-opacity" />
+            <Dialog.Overlay className="fixed inset-0 bg-black bg-opacity-75 transition-opacity z-[9998]" />
           </Transition.Child>
-
-          <span
-            className="hidden sm:inline-block sm:align-middle sm:h-screen"
-            aria-hidden="true"
-          >
-            &#8203;
-          </span>
 
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
-            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            enterTo="opacity-100 translate-y-0 sm:scale-100"
+            enterFrom="opacity-0 scale-95"
+            enterTo="opacity-100 scale-100"
             leave="ease-in duration-200"
-            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            leaveFrom="opacity-100 scale-100"
+            leaveTo="opacity-0 scale-95"
           >
-            <div
-              className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden 
-            shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full sm:p-6"
-            >
-              <div className="sm:flex sm:items-start">
-                <div
-                  className="mx-auto flex-shrink-0 flex items-center justify-center
-                 h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10"
-                >
-                  <Loading>Completing Transaction</Loading>
+            <div className="relative bg-[#212429] rounded-xl p-6 max-w-sm w-full mx-auto shadow-2xl border border-zinc-700 z-[9999]">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-[#7765F3] bg-opacity-20 mb-4">
+                  <Loading color="white" size="lg">
+                    <span className="sr-only">Processing transaction...</span>
+                  </Loading>
                 </div>
-                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                  <p className="text-sm text-gray-500">
-                    Completing Transaction (usually takes 10-15 seconds)
-                  </p>
-                  <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                    <button
-                      type="button"
-                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
-                      onClick={handleClose}
-                    >
-                      Close
-                    </button>
-                  </div>
+                
+                <Dialog.Title as="h3" className="text-lg font-semibold text-white mb-2">
+                  Processing Transaction
+                </Dialog.Title>
+                
+                <Dialog.Description className="text-sm text-zinc-400 mb-6">
+                  This usually takes 10-15 seconds. Please don't close this window.
+                </Dialog.Description>
+                
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    className="px-6 py-2 bg-[#7765F3] hover:bg-[#4D44B5] text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#7765F3] focus:ring-offset-2 focus:ring-offset-[#212429]"
+                    onClick={handleClose}
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </div>

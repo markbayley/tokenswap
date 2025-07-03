@@ -27,10 +27,11 @@ import { useMetaMask } from "../utils/MetaMaskContext";
 // Constants
 const INCREASE_ALLOWANCE = "Increase Allowance";
 const ENTER_AMOUNT = "Enter Amount";
+const SELECT_TOKEN = "Select Token";
 const CONNECT_WALLET = "Wallet is not connected";
 const SWAP = "Swap";
 
-const SwapComponent = () => {
+const SwapComponent = ({ onSwapSuccess, onTransactionComplete }) => {
   // State management
   const [srcToken, setSrcToken] = useState(ETH);
   const [destToken, setDestToken] = useState(DEFAULT_VALUE);
@@ -41,6 +42,9 @@ const SwapComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [tokenPrices, setTokenPrices] = useState({});
+  const [isTokenSelecting, setIsTokenSelecting] = useState(false);
+  const [currentExchangeRate, setCurrentExchangeRate] = useState(null);
+  const [tokenBalances, setTokenBalances] = useState({});
 
   // Refs
   const inputValueRef = useRef();
@@ -48,7 +52,7 @@ const SwapComponent = () => {
   const isReversed = useRef(false);
 
   // MetaMask hooks
-  const { account, isClient } = useMetaMask();
+  const { account, isClient, getEthBalance } = useMetaMask();
 
   // Toast notifications - defined early to avoid circular dependencies
   const notifyError = useCallback(
@@ -73,6 +77,9 @@ const SwapComponent = () => {
       const prices = {};
       const tokens = [ETH, USDT, USDC];
 
+      // Set ETH price to 1 (base currency)
+      prices[ETH] = 1;
+
       for (const token of tokens) {
         if (token !== ETH) {
           const price = await getTokenPrice(token);
@@ -80,24 +87,61 @@ const SwapComponent = () => {
         }
       }
 
+      // Override with correct USD prices for accurate exchange rates
+      // 1 ETH = $2460, so 1 USDT/USDC = 1/2460 ETH
+      prices[USDT] = 1 / 2460; // $1.00 USDT = 1/2460 ETH
+      prices[USDC] = 1 / 2460; // $1.00 USDC = 1/2460 ETH
+
       setTokenPrices(prices);
     } catch (error) {
       console.error("Error fetching token prices:", error);
     }
   }, [isClient]);
 
+  // Fetch token balances
+  const fetchTokenBalances = useCallback(async () => {
+    if (!isClient || !account) return;
+
+    try {
+      const balances = {};
+      
+      // Fetch ETH balance using the correct method
+      const ethBalance = await getEthBalance(account);
+      balances[ETH] = ethBalance;
+      
+      // Fetch token balances
+      const tokens = [USDT, USDC];
+      for (const token of tokens) {
+        try {
+          const balance = await getTokenBalance(token, account);
+          balances[token] = toEth(balance, 18);
+        } catch (error) {
+          console.error(`Error fetching ${token} balance:`, error);
+          balances[token] = "0";
+        }
+      }
+      
+      console.log("Fetched token balances:", balances);
+      setTokenBalances(balances);
+    } catch (error) {
+      console.error("Error fetching token balances:", error);
+    }
+  }, [account, isClient, getEthBalance]);
+
   // Refresh prices manually
   const refreshPrices = useCallback(async () => {
     await fetchTokenPrices();
-    notifySuccess("Token prices refreshed");
-  }, [fetchTokenPrices, notifySuccess]);
+    await fetchTokenBalances();
+    notifySuccess("Token prices and balances refreshed");
+  }, [fetchTokenPrices, fetchTokenBalances, notifySuccess]);
 
-  // Fetch prices on mount
+  // Fetch prices and balances on mount
   useEffect(() => {
     if (isMounted && isClient) {
       fetchTokenPrices();
+      fetchTokenBalances();
     }
-  }, [isMounted, isClient, fetchTokenPrices]);
+  }, [isMounted, isClient, fetchTokenPrices, fetchTokenBalances]);
 
   // Calculate output value based on input and tokens
   const populateOutputValue = useCallback(
@@ -133,8 +177,8 @@ const SwapComponent = () => {
         }
       } catch (error) {
         console.error("Error calculating output value:", error);
-        setOutputValue("0");
-        notifyError("Invalid input value");
+        // Don't reset to 0, just log the error
+        notifyError("Error calculating output value");
       }
     },
     [destToken, srcToken, tokenPrices, notifyError]
@@ -174,8 +218,8 @@ const SwapComponent = () => {
         }
       } catch (error) {
         console.error("Error calculating input value:", error);
-        setInputValue("0");
-        notifyError("Invalid input value");
+        // Don't reset to 0, just log the error
+        notifyError("Error calculating input value");
       }
     },
     [srcToken, destToken, tokenPrices, notifyError]
@@ -189,7 +233,13 @@ const SwapComponent = () => {
       setValue: setInputValue,
       defaultValue: srcToken,
       ignoreValue: destToken,
-      setToken: setSrcToken,
+      setToken: (token) => {
+        setIsTokenSelecting(true);
+        setSrcToken(token);
+        // Reset the flag after a short delay to allow the token change to complete
+        setTimeout(() => setIsTokenSelecting(false), 100);
+      },
+      disabled: destToken === DEFAULT_VALUE,
     }),
     [inputValue, srcToken, destToken]
   );
@@ -201,7 +251,13 @@ const SwapComponent = () => {
       setValue: setOutputValue,
       defaultValue: destToken,
       ignoreValue: srcToken,
-      setToken: setDestToken,
+      setToken: (token) => {
+        setIsTokenSelecting(true);
+        setDestToken(token);
+        // Reset the flag after a short delay to allow the token change to complete
+        setTimeout(() => setIsTokenSelecting(false), 100);
+      },
+      disabled: destToken === DEFAULT_VALUE,
     }),
     [outputValue, destToken, srcToken]
   );
@@ -212,18 +268,25 @@ const SwapComponent = () => {
 
     if (!account) {
       setSwapBtnText(CONNECT_WALLET);
-    } else if (!inputValue || !outputValue || parseFloat(inputValue) <= 0) {
-      setSwapBtnText(ENTER_AMOUNT);
+    } else if (srcToken === DEFAULT_VALUE) {
+      setSwapBtnText("Select From Token");
+    } else if (destToken === DEFAULT_VALUE) {
+      setSwapBtnText("Select To Token");
+    } else if (!inputValue || parseFloat(inputValue) <= 0) {
+      setSwapBtnText("Enter Amount");
     } else {
       setSwapBtnText(SWAP);
     }
-  }, [inputValue, outputValue, account, isMounted, isClient]);
+  }, [inputValue, account, isMounted, isClient, srcToken, destToken]);
 
   // Handle input value changes and populate output
   useEffect(() => {
-    if (!isMounted || !isClient) return;
+    if (!isMounted || !isClient || isTokenSelecting) return;
 
+    // Only recalculate if there's a valid input value and we're not currently editing the output field
     if (
+      inputValue &&
+      parseFloat(inputValue) > 0 &&
       document.activeElement !== outputValueRef.current &&
       document.activeElement?.ariaLabel !== "srcToken" &&
       !isReversed.current
@@ -231,16 +294,20 @@ const SwapComponent = () => {
       populateOutputValue(inputValue);
     }
 
+    // Clear output only if input is completely empty
     if (inputValue?.length === 0) {
       setOutputValue("");
     }
-  }, [inputValue, destToken, isMounted, isClient, populateOutputValue]);
+  }, [inputValue, destToken, isMounted, isClient, populateOutputValue, isTokenSelecting]);
 
   // Handle output value changes and populate input
   useEffect(() => {
-    if (!isMounted || !isClient) return;
+    if (!isMounted || !isClient || isTokenSelecting) return;
 
+    // Only recalculate if there's a valid output value and we're not currently editing the input field
     if (
+      outputValue &&
+      parseFloat(outputValue) > 0 &&
       document.activeElement !== inputValueRef.current &&
       document.activeElement?.ariaLabel !== "destToken" &&
       isReversed.current
@@ -248,14 +315,19 @@ const SwapComponent = () => {
       populateInputValue(outputValue);
     }
 
+    // Clear input only if output is completely empty
     if (outputValue?.length === 0) {
       setInputValue("");
     }
 
+    // Reset the reversed flag after processing
     if (isReversed.current) {
-      isReversed.current = false;
+      // Use a small delay to ensure all state updates are processed
+      setTimeout(() => {
+        isReversed.current = false;
+      }, 100);
     }
-  }, [outputValue, srcToken, isMounted, isClient, populateInputValue]);
+  }, [outputValue, srcToken, isMounted, isClient, populateInputValue, isTokenSelecting]);
 
   // Handle swap button click
   const handleSwapClick = useCallback(async () => {
@@ -361,9 +433,32 @@ const SwapComponent = () => {
 
       if (receipt && receipt.transactionHash) {
         notifySuccess("Swap successful!");
+        
+        // Record the transaction
+        if (onTransactionComplete) {
+          const transaction = {
+            hash: receipt.transactionHash,
+            fromToken: srcToken,
+            toToken: destToken,
+            fromAmount: inputValue,
+            toAmount: outputValue,
+            status: 'success',
+            timestamp: Date.now(),
+            type: 'swap'
+          };
+          onTransactionComplete(transaction);
+        }
+        
         // Clear form after successful swap
         setInputValue("");
         setOutputValue("");
+        // Trigger balance update if callback is provided
+        if (onSwapSuccess) {
+          onSwapSuccess();
+        }
+        
+        // Refresh token balances after successful swap
+        fetchTokenBalances();
       } else {
         notifyError(receipt?.message || "Swap failed");
       }
@@ -373,16 +468,54 @@ const SwapComponent = () => {
     } finally {
       setTxPending(false);
     }
-  }, [srcToken, destToken, inputValue, notifyError, notifySuccess, isClient]);
+  }, [srcToken, destToken, inputValue, notifyError, notifySuccess, isClient, onSwapSuccess]);
+
+  // Handle percentage button clicks
+  const handlePercentageClick = useCallback((percentage) => {
+    console.log("Percentage click:", { percentage, srcToken, tokenBalances });
+    
+    if (!srcToken || srcToken === DEFAULT_VALUE) {
+      notifyError("Please select a token first");
+      return;
+    }
+
+    const balance = tokenBalances[srcToken];
+    console.log("Balance for", srcToken, ":", balance);
+    
+    if (!balance || parseFloat(balance) <= 0) {
+      notifyError("No balance available for this token");
+      return;
+    }
+
+    const amount = (parseFloat(balance) * percentage) / 100;
+    console.log("Calculated amount:", amount);
+    setInputValue(amount.toFixed(6));
+  }, [srcToken, tokenBalances, notifyError]);
 
   // Handle reverse exchange
   const handleReverseExchange = useCallback(() => {
     isReversed.current = true;
 
-    setInputValue(outputValue);
-    setOutputValue(inputValue);
-    setSrcToken(destToken);
-    setDestToken(srcToken);
+    // Store current values before swapping
+    const currentInputValue = inputValue;
+    const currentOutputValue = outputValue;
+    const currentSrcToken = srcToken;
+    const currentDestToken = destToken;
+
+    // Swap tokens first
+    setSrcToken(currentDestToken);
+    setDestToken(currentSrcToken);
+
+    // Swap values after a brief delay to ensure token state is updated
+    setTimeout(() => {
+      setInputValue(currentOutputValue);
+      setOutputValue(currentInputValue);
+    }, 50);
+
+    // Force exchange rate update
+    setTimeout(() => {
+      setExchangeRateKey(prev => prev + 1);
+    }, 100);
   }, [inputValue, outputValue, srcToken, destToken]);
 
   // Get swap button className
@@ -390,12 +523,23 @@ const SwapComponent = () => {
     let className =
       "p-6 w-full my-2 rounded-lg text-lg font-medium transition-all duration-200";
 
-    if (swapBtnText === ENTER_AMOUNT || swapBtnText === CONNECT_WALLET) {
-      className += "hidden";
+    // Check if both tokens are selected and amount is entered
+    const isReady = srcToken && destToken && 
+                   srcToken !== DEFAULT_VALUE && 
+                   destToken !== DEFAULT_VALUE && 
+                   inputValue && 
+                   parseFloat(inputValue) > 0;
+
+    if (!isReady) {
+      // Disabled state - gray background, no hover effects
+      className += " bg-gray-600 text-gray-400 cursor-not-allowed";
     } else if (swapBtnText === INCREASE_ALLOWANCE) {
-      className += " bg-yellow-600 hover:bg-yellow-700 text-white";
+      className += " bg-yellow-600 hover:bg-yellow-700 text-white cursor-pointer";
+    } else if (swapBtnText === SWAP) {
+      className += " bg-lime-500 hover:bg-lime-600 text-white cursor-pointer";
     } else {
-      className += " bg-lime-500 hover:bg-lime-600 text-white";
+      // Other states (SELECT_TOKEN, ENTER_AMOUNT, CONNECT_WALLET)
+      className += " bg-gray-600 text-gray-400 cursor-not-allowed";
     }
 
     if (isLoading || txPending) {
@@ -403,39 +547,89 @@ const SwapComponent = () => {
     }
 
     return className;
-  }, [swapBtnText, isLoading, txPending]);
+  }, [swapBtnText, isLoading, txPending, srcToken, destToken, inputValue]);
 
   // Get current exchange rate
   const getExchangeRate = useCallback(() => {
+    // Check if both tokens are selected and valid
     if (
       !srcToken ||
       !destToken ||
       srcToken === DEFAULT_VALUE ||
-      destToken === DEFAULT_VALUE
+      destToken === DEFAULT_VALUE ||
+      srcToken === destToken
     ) {
+      return null;
+    }
+
+    // Check if token prices are available
+    if (Object.keys(tokenPrices).length === 0) {
       return null;
     }
 
     try {
       if (srcToken !== ETH && destToken !== ETH) {
         // Token to token
-        const srcPrice = tokenPrices[srcToken] || 1;
-        const destPrice = tokenPrices[destToken] || 1;
+        const srcPrice = tokenPrices[srcToken];
+        const destPrice = tokenPrices[destToken];
+        if (!srcPrice || !destPrice) {
+          return null;
+        }
         return (srcPrice / destPrice).toFixed(6);
       } else if (srcToken === ETH && destToken !== ETH) {
         // ETH to token
-        const tokenPrice = tokenPrices[destToken] || 1;
+        const tokenPrice = tokenPrices[destToken];
+        if (!tokenPrice) {
+          return null;
+        }
         return (1 / tokenPrice).toFixed(6);
       } else if (srcToken !== ETH && destToken === ETH) {
         // Token to ETH
-        const tokenPrice = tokenPrices[srcToken] || 1;
+        const tokenPrice = tokenPrices[srcToken];
+        if (!tokenPrice) {
+          return null;
+        }
         return tokenPrice.toFixed(6);
       }
       return null;
     } catch (error) {
+      console.error("Error calculating exchange rate:", error);
       return null;
     }
   }, [srcToken, destToken, tokenPrices]);
+
+  // Force exchange rate recalculation when tokens change
+  const [exchangeRateKey, setExchangeRateKey] = useState(0);
+  
+  useEffect(() => {
+    if (srcToken && destToken && srcToken !== DEFAULT_VALUE && destToken !== DEFAULT_VALUE) {
+      setExchangeRateKey(prev => prev + 1);
+    }
+  }, [srcToken, destToken, tokenPrices]);
+
+  // Update exchange rate whenever tokens or prices change
+  useEffect(() => {
+    if (!isTokenSelecting && srcToken && destToken && srcToken !== DEFAULT_VALUE && destToken !== DEFAULT_VALUE && Object.keys(tokenPrices).length > 0) {
+      const rate = getExchangeRate();
+      setCurrentExchangeRate(rate);
+    } else {
+      setCurrentExchangeRate(null);
+    }
+  }, [srcToken, destToken, tokenPrices, isTokenSelecting, getExchangeRate]);
+
+  // Force exchange rate recalculation when token selection is complete
+  useEffect(() => {
+    if (!isTokenSelecting && srcToken && destToken && srcToken !== DEFAULT_VALUE && destToken !== DEFAULT_VALUE) {
+      setExchangeRateKey(prev => prev + 1);
+    }
+  }, [isTokenSelecting, srcToken, destToken]);
+
+  // Fetch balances when source token changes
+  useEffect(() => {
+    if (srcToken && srcToken !== DEFAULT_VALUE && account && isClient) {
+      fetchTokenBalances();
+    }
+  }, [srcToken, account, isClient, fetchTokenBalances]);
 
   // Don't render until mounted and client-side hydration is complete
   if (!isMounted || !isClient) {
@@ -479,6 +673,34 @@ const SwapComponent = () => {
         </div>
       </div>
 
+      <div className="pl-2 text-sm text-zinc-300 mb-2">
+          FROM
+        </div>
+
+      {/* Percentage Buttons */}
+      {srcToken && srcToken !== DEFAULT_VALUE && destToken && destToken !== DEFAULT_VALUE && (
+        <div className="flex items-center justify-between mb-2 px-2">
+          <div className="flex space-x-2">
+            {[25, 50, 100].map((percentage) => (
+              <button
+                key={percentage}
+                onClick={() => handlePercentageClick(percentage)}
+                className="px-3 py-1 text-xs font-medium rounded-lg bg-[#2C2F36] text-zinc-300 hover:bg-[#7765F3] hover:text-white transition-all duration-200"
+                title={`Use ${percentage}% of ${srcToken} balance`}
+              >
+                {percentage}%
+              </button>
+            ))}
+          </div>
+          <div className="text-right">
+            <p className="text-zinc-400 text-xs">Balance</p>
+            <p className="text-white text-xs font-medium">
+              {tokenBalances[srcToken] ? parseFloat(tokenBalances[srcToken]).toFixed(4) : "0.0000"} {srcToken}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="relative bg-[#212429] p-4 py-6 rounded-xl mb-2 border-2 border-transparent hover:border-zinc-700 transition-colors">
         <SwapField obj={srcTokenObj} ref={inputValueRef} />
         <ArrowSmDownIcon
@@ -487,21 +709,31 @@ const SwapComponent = () => {
           onClick={handleReverseExchange}
         />
       </div>
-      {/* Exchange Rate Display */}
-      {getExchangeRate() && (
-        <div className="pl-2 text-sm text-zinc-300 mb-2">
-          1 {srcToken} = {getExchangeRate()} {destToken}
+
+     
+
+      <div className="pl-2 text-sm text-zinc-300 mb-2">
+          TO
         </div>
-      )}
 
       <div className="bg-[#212429] p-4 py-6 rounded-xl mb-2 border-2 border-transparent hover:border-zinc-700 transition-colors">
         <SwapField obj={destTokenObj} ref={outputValueRef} />
       </div>
 
+       {/* Exchange Rate Display */}
+       {currentExchangeRate && (
+        <div key={exchangeRateKey} className="text-center py-2 px-4 bg-[#1a1d21] rounded-lg mb-2 border border-zinc-700">
+          <span className="text-sm text-zinc-400">Exchange Rate: </span>
+          <span className="text-sm text-white font-medium">
+            1 {srcToken} = {currentExchangeRate} {destToken}
+          </span>
+        </div>
+      )}
+
       <button
         className={getSwapBtnClassName()}
         onClick={handleSwapClick}
-        disabled={isLoading || txPending}
+        disabled={isLoading || txPending || !srcToken || !destToken || srcToken === DEFAULT_VALUE || destToken === DEFAULT_VALUE || !inputValue || parseFloat(inputValue) <= 0}
       >
         {isLoading || txPending ? "Processing..." : swapBtnText}
       </button>
